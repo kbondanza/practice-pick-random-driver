@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+    <style type="text/css">
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+          "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
+          "Helvetica Neue", sans-serif;
+        font-size: 112.5%;
+        margin-left: auto;
+        margin-right: auto;
+        max-width: 40em;
+        width: 88%;
+      }
+      /**
+			 * Visually hide an element, but leave it available for screen readers
+			 * @link https://github.com/h5bp/html5-boilerplate/blob/master/dist/css/main.css
+			 * @link http://snook.ca/archives/html_and_css/hiding-content-for-accessibility
+			 */
+      .screen-reader {
+        border: 0;
+        clip: rect(0 0 0 0);
+        height: 1px;
+        margin: -1px;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        white-space: nowrap;
+        width: 1px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>who should drive</h1>
+    <div id="app" aria-live="polite"></div>
+    <form id="add-driver">
+      <label class="screen-reader" for="potential-driver">Name of driver</label>
+      <input id="potential-driver" placeholder="Name of driver..." />
+      <button>Add Driver</button>
+    </form>
+    <button id="pick-driver">Who's driving?</button>
+    <button id="clear">Clear Drivers</button>
+    <script>
+      console.log("kelly");
+      // data
+      var data = {
+        drivers: ["Katie", "Kris", "Kelly"],
+        selected: null
+      };
+      // create the markup string
+      var template = function() {
+        console.log("template");
+        var driverList = data.drivers.map(function(driver, index) {
+          return (
+            "<li>" +
+            driver +
+            '<button data-remove-driver="' +
+            driver +
+            '">Remove Driver</button></li>'
+          );
+        });
+        var html = "";
+        if (driverList.length > 0) {
+          html += "<ul>" + driverList.join("") + "</ul>";
+        }
+        if (data.selected) {
+          html += "<p><strong>" + data.selected + " is driving</strong></p>";
+        }
+        return html;
+      };
+
+      var emitEvent = function(elem, detail) {
+        // create a new event
+        var event = new CustomEvent("render", {
+          bubbles: true,
+          cancelable: true,
+          detail: detail || {}
+        });
+
+        // dispatch the event
+        elem.dispatchEvent(event);
+      };
+
+      // render our template into the DOM
+      var render = function() {
+        var app = document.querySelector("#app");
+        if (!app) {
+          console.log("not app");
+          return;
+        }
+        app.innerHTML = template();
+        emitEvent(app, data);
+      };
+
+      // shuffle our array of drivers and pick one
+      var shuffle = function(arr) {
+        // create a clone of the array so that we don't shuffle the original one
+        var arrClone = arr.slice();
+        // shuffle the array
+        return arrClone.sort(function() {
+          return Math.random() - 0.5;
+        });
+      };
+
+      // get drivers from local storage
+      var getDriversFromLocalStorage = function() {
+        var drivers = localStorage.getItem("whosDriving");
+        if (drivers) {
+          data.drivers = JSON.parse(drivers);
+        }
+      };
+
+      var submitHandler = function(event) {
+        if (!event.target.matches("#add-driver")) {
+          return;
+        }
+
+        // prevent default form behavior
+        event.preventDefault();
+
+        // get the field
+        var driver = event.target.querySelector("#potential-driver");
+        if (!driver || driver.value.length < 1) {
+          return;
+        }
+        // update our data and UI
+        data.drivers.push(driver.value);
+        render();
+
+        // clear the field and refocus
+        driver.value = "";
+        driver.focus();
+      };
+
+      var removeDriver = function(event) {
+        var index = event.target.getAttribute("data-remove-driver");
+        data.drivers.splice(index, 1);
+        render();
+      };
+
+      var pickDriver = function() {
+        var randomize = shuffle(data.drivers);
+        data.selected = randomize[0];
+        render();
+      };
+
+      var clearDrivers = function() {
+        data.drivers = [];
+        render();
+      };
+
+      // handle click events
+      var clickHandler = function(event) {
+        if (event.target.matches("[data-remove-driver]")) {
+          removeDriver(event);
+        }
+
+        if (event.target.matches("#pick-driver")) {
+          pickDriver();
+        }
+
+        if (event.target.matches("#clear")) {
+          clearDrivers();
+        }
+      };
+
+      // dave to local storage on render
+      var renderHandler = function(event) {
+        localStorage.setItem(
+          "whosDriving",
+          JSON.stringify(event.detail.drivers)
+        );
+      };
+      document.addEventListener("submit", submitHandler, false);
+      document.documentElement.addEventListener("click", clickHandler, false);
+      document.addEventListener("render", renderHandler, false);
+
+      // initial render
+      getDriversFromLocalStorage();
+      render();
+    </script>
+  </body>
+</html>
